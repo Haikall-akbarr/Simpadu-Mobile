@@ -29,7 +29,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+
     - assets/images/login_bg.jpg
-    - assets/images/logo.jpg
+    - assets/images/Poliban_logo1.png
     - assets/images/banner1.jpg
     - assets/images/banner2.jpg
+    - assets/images/logo.jpg
+    - assets/images/Profile.jpg
