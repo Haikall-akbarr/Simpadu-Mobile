@@ -26,7 +26,7 @@ class DashboardPage extends StatelessWidget {
                 Container(
                   decoration: BoxDecoration(
                   image: DecorationImage(
-                    image: AssetImage('assets/images/banner1.jpg'),
+                    image: AssetImage('assets/images/banner.jpg'),
                     fit: BoxFit.cover,
                   ),
                   ),

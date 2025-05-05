@@ -68,14 +68,14 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset('assets/images/logo.jpg', height: 60),
+                  Image.asset('assets/images/Poliban_logo1.png', height: 60),
                   const SizedBox(height: 10),
                   const Text(
-                    'Masuk ke SIMAK',
+                    'Masuk ke SIMPADU',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   const Text(
-                    'Akses Mudah, Akademik Lancar',
+                    'Sistem Informasi Terpadu Poliban',
                     style: TextStyle(fontSize: 14, color: Colors.black54),
                   ),
                   const SizedBox(height: 20),
