@@ -115,7 +115,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
                           Text(
-                            'M. HAIKAL AKBAR',
+                            'M. HAIKAL AKBAR ',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
