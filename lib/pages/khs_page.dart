@@ -13,7 +13,9 @@ class _KhsPageState extends State<KhsPage> {
   List<dynamic> khsList = [];
 
   Future<void> fetchKhs() async {
-    final response = await http.get(Uri.parse('https://jsonplaceholder.typicode.com/posts'));
+    final response = await http.get(
+      Uri.parse('http://localhost:3000/api/mahasiswa'),
+    );
 
     if (response.statusCode == 200) {
       setState(() {

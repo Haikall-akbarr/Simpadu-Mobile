@@ -32,16 +32,17 @@ class _LoginPageState extends State<LoginPage> {
     } else {
       showDialog(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Login Gagal'),
-          content: const Text('Username atau password salah.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
+        builder:
+            (_) => AlertDialog(
+              title: const Text('Login Gagal'),
+              content: const Text('Username atau password salah.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
             ),
-          ],
-        ),
       );
     }
   }
@@ -52,10 +53,7 @@ class _LoginPageState extends State<LoginPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/login_bg.jpg',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('assets/images/login_bg.jpg', fit: BoxFit.cover),
           Container(color: Colors.black.withOpacity(0.3)),
           Center(
             child: Container(
@@ -85,7 +83,9 @@ class _LoginPageState extends State<LoginPage> {
                       hintText: 'NIM / Email',
                       filled: true,
                       fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -96,7 +96,9 @@ class _LoginPageState extends State<LoginPage> {
                       hintText: 'Kata sandi anda',
                       filled: true,
                       fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       suffixIcon: const Icon(Icons.visibility_off),
                     ),
                   ),
@@ -111,18 +113,18 @@ class _LoginPageState extends State<LoginPage> {
                   _isLoading
                       ? const CircularProgressIndicator()
                       : ElevatedButton(
-                          onPressed: _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 50),
-                            backgroundColor: Colors.blue,
-                          ),
-                          child: const Text('Masuk'),
+                        onPressed: _handleLogin,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                          backgroundColor: Colors.blue,
                         ),
+                        child: const Text('Masuk'),
+                      ),
                   const SizedBox(height: 10),
                   TextButton(
                     onPressed: () {},
                     child: const Text('Belum Punya Akun? Buat Akun'),
-                  )
+                  ),
                 ],
               ),
             ),
