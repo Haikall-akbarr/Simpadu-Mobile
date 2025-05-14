@@ -1,6 +1,5 @@
-// lib/pages/scan_page.dart
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -10,38 +9,34 @@ class ScanPage extends StatefulWidget {
 }
 
 class _ScanPageState extends State<ScanPage> {
-  CameraController? _controller;
-  List<CameraDescription>? cameras;
-  bool _isReady = false;
+  bool isScanned = false;
 
-  @override
-  void initState() {
-    super.initState();
-    initCamera();
-  }
-
-  Future<void> initCamera() async {
-    cameras = await availableCameras();
-    _controller = CameraController(cameras![0], ResolutionPreset.medium);
-    await _controller!.initialize();
-    setState(() => _isReady = true);
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
+  void _onDetect(Barcode barcode) {
+    if (!isScanned) {
+      final String? code = barcode.rawValue;
+      if (code != null) {
+        isScanned = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Code detected: $code')),
+        );
+        // Return after successful scan (optional)
+        Navigator.pop(context, code);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_isReady || _controller == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Scan Absen')),
-      body: CameraPreview(_controller!),
+      appBar: AppBar(title: const Text('Scan Barcode/QR Code')),
+      body: MobileScanner(
+        onDetect: (BarcodeCapture capture) {
+          final Barcode? barcode = capture.barcodes.firstOrNull;
+          if (barcode != null) {
+            _onDetect(barcode);
+          }
+        },
+      ),
     );
   }
 }
