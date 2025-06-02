@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class DetailKhsPage extends StatefulWidget {
-  final int mahasiswaId;
+  final String mahasiswaId;
   final String mahasiswaNama;
 
   const DetailKhsPage({
@@ -17,22 +17,20 @@ class DetailKhsPage extends StatefulWidget {
 }
 
 class _DetailKhsPageState extends State<DetailKhsPage> {
-  List<dynamic> nilaiList = [];
+  List<dynamic> matakuliahList = [];
 
-  Future<void> fetchDetailKhs() async {
+  Future<void> fetchMatakuliah() async {
     try {
       final response = await http.get(
-        Uri.parse(
-          'http://192.168.110.81:3000/api/mahasiswa/${widget.mahasiswaId}/khs',
-        ),
+        Uri.parse('http://192.168.137.226:3000/matakuliah'),
       );
 
       if (response.statusCode == 200) {
         setState(() {
-          nilaiList = json.decode(response.body);
+          matakuliahList = json.decode(response.body);
         });
       } else {
-        throw Exception('Gagal memuat nilai KHS');
+        throw Exception('Gagal memuat data matakuliah');
       }
     } catch (e) {
       debugPrint('Error: $e');
@@ -42,26 +40,35 @@ class _DetailKhsPageState extends State<DetailKhsPage> {
   @override
   void initState() {
     super.initState();
-    fetchDetailKhs();
+    fetchMatakuliah();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Detail KHS - ${widget.mahasiswaNama}')),
-      body:
-          nilaiList.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                itemCount: nilaiList.length,
-                itemBuilder: (context, index) {
-                  final item = nilaiList[index];
-                  return ListTile(
-                    title: Text(item['mataKuliah'] ?? 'Matkul Tidak Diketahui'),
-                    subtitle: Text('Nilai: ${item['nilai'] ?? '-'}'),
-                  );
-                },
-              ),
+      appBar: AppBar(title: Text('KHS: ${widget.mahasiswaNama}')),
+      body: matakuliahList.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: matakuliahList.length,
+              itemBuilder: (context, index) {
+                final item = matakuliahList[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: ListTile(
+                    title: Text(item['NAMA_MK'] ?? 'Mata kuliah tidak diketahui'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('ID MK: ${item['ID_MK'] ?? '-'}'),
+                        Text('ID Perkuliahan: ${item['ID_PERKULIAHAN'] ?? '-'}'),
+                        Text('ID Pegawai (Dosen): ${item['ID_PEGAWAI'] ?? '-'}'),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

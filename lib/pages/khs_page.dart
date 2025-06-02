@@ -16,7 +16,7 @@ class _KhsPageState extends State<KhsPage> {
   Future<void> fetchKhs() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.110.81:3000/api/mahasiswa'),
+        Uri.parse('http://192.168.18.106:3000/mahasiswa'),
       );
 
       if (response.statusCode == 200) {
@@ -56,20 +56,20 @@ class _KhsPageState extends State<KhsPage> {
                     ),
                     child: ListTile(
                       title: Text(
-                        item['nama'] ?? 'Tidak ada nama',
+                        item['NM_MHS'] ?? 'Tidak ada nama',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      subtitle: Text("NIM: ${item['nim'] ?? '-'}"),
+                      subtitle: Text("NIM: ${item['NIM'] ?? '-'}"),
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => DetailKhsPage(
-                              mahasiswaId: item['id'],      // <-- Pastikan ada 'id' dari API
-                              mahasiswaNama: item['nama'] ?? '',
+                              mahasiswaId: item['NIM'],
+                              mahasiswaNama: item['NM_MHS'] ?? '',
                             ),
                           ),
                         );

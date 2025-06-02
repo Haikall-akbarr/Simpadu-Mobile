@@ -1,12 +1,20 @@
-
 Future<List<String>> fetchMataKuliah() async {
   await Future.delayed(const Duration(seconds: 1));
-  return ['Pemrograman Mobile', 'Jaringan Komputer', 'Statistika', 'Sistem Basis Data'];
+  return [
+    'Pemrograman Mobile',
+    'Jaringan Komputer',
+    'Statistika',
+    'Sistem Basis Data',
+  ];
 }
 
 Future<List<String>> fetchRekapAbsen() async {
   await Future.delayed(const Duration(seconds: 1));
-  return ['Hadir - Pemrograman Mobile', 'Hadir - Jaringan Komputer', 'Izin - Statistika'];
+  return [
+    'Hadir - Pemrograman Mobile',
+    'Hadir - Jaringan Komputer',
+    'Izin - Statistika',
+  ];
 }
 
 Future<Map<String, String>> fetchProfilMahasiswa() async {
@@ -17,4 +25,9 @@ Future<Map<String, String>> fetchProfilMahasiswa() async {
     'Program Studi': 'Teknik Informatika',
     'Kampus': 'Politeknik Negeri Banjarmasin',
   };
+}
+
+Future<bool> fetchStatusAktif() async {
+  await Future.delayed(const Duration(seconds: 1));
+  return true; // Misalnya sudah bayar UKT = Aktif (ubah ke false kalau mau tes)
 }

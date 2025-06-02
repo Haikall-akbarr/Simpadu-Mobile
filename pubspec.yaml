@@ -18,8 +18,11 @@ dependencies:
   mobile_scanner: ^3.5.1
   camera: ^0.10.5+5
   permission_handler: ^11.0.1
-  http: ^0.13.6
+  http: ^1.2.1
   path_provider: ^2.1.2
+  animated_splash_screen: ^1.3.0
+  lottie: ^2.7.0
+
 
 dev_dependencies:
   flutter_test:
@@ -36,3 +39,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/Lottie/Animation - 1747794577076.json
