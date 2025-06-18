@@ -6,9 +6,9 @@ import 'khs_page.dart';
 import 'cetak_krs_page.dart';
 import 'pengumuman_page.dart';
 import 'jadwal_page.dart';
-import 'absen_page.dart';         // PASTIKAN FILE INI ADA DI lib/pages/
-import 'matakuliah_page.dart';   // PASTIKAN FILE INI ADA DI lib/pages/
-import 'profil_page.dart';       // PASTIKAN FILE INI ADA DI lib/pages/
+import 'absen_page.dart'; // PASTIKAN FILE INI ADA DI lib/pages/
+import 'matakuliah_page.dart'; // PASTIKAN FILE INI ADA DI lib/pages/
+import 'profil_page.dart'; // PASTIKAN FILE INI ADA DI lib/pages/
 import '../services/pengumuman_service.dart' as pengumumanService;
 import '../services/dummy_api.dart';
 
@@ -34,9 +34,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
     _pages = [
       _buildBerandaContent(),
-      const AbsenPage(),        // Pastikan AbsenPage() bisa dipanggil dengan const
-      const MataKuliahPage(),   // Pastikan MatakuliahPage() bisa dipanggil dengan const
-      const ProfilPage(),       // Pastikan ProfilPage() bisa dipanggil dengan const
+      const AbsenPage(), // Pastikan AbsenPage() bisa dipanggil dengan const
+      const MataKuliahPage(), // Pastikan MatakuliahPage() bisa dipanggil dengan const
+      const ProfilPage(), // Pastikan ProfilPage() bisa dipanggil dengan const
     ];
   }
 
@@ -104,7 +104,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   Text(
                     matkul,
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -131,7 +133,10 @@ class _DashboardPageState extends State<DashboardPage> {
         child: const Text(
           "Memuat status UKT...",
           style: TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
         ),
       );
     }
@@ -145,7 +150,10 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Text(
         'Status UKT: ${isAktif! ? "AKTIF" : "TIDAK AKTIF"}',
         style: const TextStyle(
-            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+        ),
       ),
     );
   }
@@ -158,8 +166,9 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
               color: Colors.blue.shade700,
-              borderRadius:
-                  const BorderRadius.vertical(bottom: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(24),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,24 +187,29 @@ class _DashboardPageState extends State<DashboardPage> {
                           const Text(
                             'M. HAIKAL AKBAR',
                             style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16),
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                           Text(
                             'Mahasiswa - Teknik Informatika',
                             style: TextStyle(
-                                color: Colors.white.withOpacity(0.85),
-                                fontSize: 13),
+                              color: Colors.white.withOpacity(0.85),
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
                       onPressed: () {
-                         _navigate(context, const PengumumanPage());
+                        _navigate(context, const PengumumanPage());
                       },
-                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -224,9 +238,10 @@ class _DashboardPageState extends State<DashboardPage> {
                       child: Text(
                         latestNews,
                         style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.blue.shade900),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.blue.shade900,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -246,8 +261,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   "Jadwal Hari Ini",
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
-                Text("Senin, 02 Jun",
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                Text(
+                  "Senin, 02 Jun",
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                ),
               ],
             ),
           ),
@@ -256,9 +273,19 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               children: [
-                _jadwalCard(context, 'Kecerdasan Buatan', '10:30 - 12:10', 'H-205'),
+                _jadwalCard(
+                  context,
+                  'Kecerdasan Buatan',
+                  '10:30 - 12:10',
+                  'H-205',
+                ),
                 const SizedBox(height: 8),
-                _jadwalCard(context, 'Metode Numerik', '13:00 - 15:30', 'H-103'),
+                _jadwalCard(
+                  context,
+                  'Metode Numerik',
+                  '13:00 - 15:30',
+                  'H-103',
+                ),
               ],
             ),
           ),
@@ -288,17 +315,29 @@ class _DashboardPageState extends State<DashboardPage> {
                 MenuCard(
                   icon: Icons.how_to_reg_outlined,
                   label: 'Absen',
-                  onTap: () => _navigate(context, const AbsenPage()), // Pastikan AbsenPage() bisa di-const
+                  onTap:
+                      () => _navigate(
+                        context,
+                        const AbsenPage(),
+                      ), // Pastikan AbsenPage() bisa di-const
                 ),
                 MenuCard(
                   icon: Icons.school_outlined,
                   label: 'KHS',
-                  onTap: () => _navigate(context, const KhsPage()), // Pastikan KhsPage() bisa di-const
+                  onTap:
+                      () => _navigate(
+                        context,
+                        const KhsPage(),
+                      ), // Pastikan KhsPage() bisa di-const
                 ),
                 MenuCard(
                   icon: Icons.print_outlined,
                   label: 'Cetak KRS',
-                  onTap: () => _navigate(context, const CetakKrsPage()), // Pastikan CetakKrsPage() bisa di-const
+                  onTap:
+                      () => _navigate(
+                        context,
+                        const CetakKrsPage(),
+                      ), // Pastikan CetakKrsPage() bisa di-const
                 ),
                 // PENYESUAIAN DI SINI:
                 MenuCard(
@@ -321,10 +360,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: _pages,
-        ),
+        child: IndexedStack(index: _currentIndex, children: _pages),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

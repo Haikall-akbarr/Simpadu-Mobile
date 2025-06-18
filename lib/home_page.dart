@@ -1,3 +1,4 @@
+// lib/home_page.dart
 import 'package:flutter/material.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/absen_page.dart';
@@ -15,29 +16,38 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    DashboardPage(),
-    AbsenPage(),
-    MataKuliahPage(),
-    ProfilPage(),
+  final List<Widget> _pages = [
+    const DashboardPage(),
+    const AbsenPage(),
+    const MataKuliahPage(), // Nama kelas sudah benar
+    const ProfilPage(),
   ];
 
   void _onItemTapped(int index) {
     setState(() => _currentIndex = index);
   }
 
+  Future<bool> _onWillPop() {
+    if (_currentIndex != 0) {
+      setState(() => _currentIndex = 0);
+      return Future.value(false);
+    }
+    return Future.value(true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (_currentIndex != 0) {
-          setState(() => _currentIndex = 0);
-          return false;
-        }
-        return true;
+    return PopScope( // Menggunakan PopScope yang baru
+      canPop: _currentIndex == 0,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        _onWillPop();
       },
       child: Scaffold(
-        body: _pages[_currentIndex],
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _pages,
+        ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             Navigator.push(
@@ -46,66 +56,68 @@ class _HomePageState extends State<HomePage> {
             );
           },
           backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          shape: const CircleBorder(),
           child: const Icon(Icons.qr_code_scanner),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: BottomAppBar(
           shape: const CircularNotchedRectangle(),
-          notchMargin: 8,
+          notchMargin: 8.0,
           color: Colors.white,
-          elevation: 10,
-          child: Container(
-            height: 70, // Tinggi cukup agar tidak overflow
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: const BoxDecoration(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+          elevation: 10.0,
+          height: 65,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildNavIcon(icon: Icons.home_filled, index: 0, label: 'Beranda'),
+                  _buildNavIcon(icon: Icons.assignment_turned_in, index: 1, label: 'Absen'),
+                ],
               ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    _buildNavIcon(Icons.home, 0, 'Beranda'),
-                    _buildNavIcon(Icons.assignment, 1, 'Absen'),
-                  ],
-                ),
-                Row(
-                  children: [
-                    _buildNavIcon(Icons.book, 2, 'Mata Kuliah'),
-                    _buildNavIcon(Icons.person, 3, 'Profil'),
-                  ],
-                ),
-              ],
-            ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildNavIcon(icon: Icons.menu_book, index: 2, label: 'Mata Kuliah'),
+                  _buildNavIcon(icon: Icons.person, index: 3, label: 'Profil'),
+                ],
+              )
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavIcon(IconData icon, int index, String label) {
-    final isSelected = _currentIndex == index;
-    return MaterialButton(
-      minWidth: 40,
-      onPressed: () => _onItemTapped(index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? Colors.blue : Colors.grey,
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.blue : Colors.grey,
-              fontSize: 12,
+  Widget _buildNavIcon({required IconData icon, required int index, required String label}) {
+    final bool isSelected = (_currentIndex == index);
+    return InkWell(
+      onTap: () => _onItemTapped(index),
+      borderRadius: BorderRadius.circular(20),
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width / 5,
+        height: double.maxFinite,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.blue : Colors.grey[600],
+              size: 24,
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.blue : Colors.grey[600],
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

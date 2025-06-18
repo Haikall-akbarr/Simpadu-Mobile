@@ -1,6 +1,9 @@
+// lib/core/constant/color.dart
 import 'package:flutter/material.dart';
 
 class AppColor {
-  static const Color backgroundColor = Color.fromARGB(255, 255, 255, 255);
-  static const Color red = Colors.red;
+  // Anda bisa definisikan semua warna aplikasi di sini
+  static const Color backgroundColor = Colors.white; // Contoh warna
+  static const Color primaryColor = Color(0xFF0D47A1); // Contoh warna tema
+  // Tambahkan warna lain jika perlu...
 }

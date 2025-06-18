@@ -120,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     // ... Sisa UI (Lupa password, Tombol Login, Buat Akun) dari jawaban sebelumnya ...
-                     const SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
@@ -142,10 +142,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: const Text('Masuk', style: TextStyle(fontSize: 16)),
                           ),
                     const SizedBox(height: 20),
-                    TextButton(
-                      onPressed: () { /* TODO: Buat Akun */ },
-                      child: const Text('Belum Punya Akun? Buat Akun', style: TextStyle(color: Color(0xFF0D47A1))),
-                    ),
+                    
                   ],
                 ),
               ),

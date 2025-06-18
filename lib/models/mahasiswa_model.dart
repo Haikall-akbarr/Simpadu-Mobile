@@ -31,3 +31,4 @@ class Mahasiswa {
     required this.alamat,
   });
 }
+
