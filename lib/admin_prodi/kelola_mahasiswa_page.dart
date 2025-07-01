@@ -1,80 +1,114 @@
 // lib/admin_prodi/kelola_mahasiswa_page.dart
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../models/mahasiswa_model.dart';
 import 'detail_mahasiswa_page.dart';
-import 'tambah_mahasiswa_page.dart'; // Tetap diimpor
+import 'tambah_mahasiswa_page.dart';
 
 class KelolaMahasiswaPage extends StatefulWidget {
   const KelolaMahasiswaPage({super.key});
-
-  static List<Mahasiswa> daftarMahasiswa = [
-    // ... data dummy tetap sama ...
-    Mahasiswa(nim: 'C030123456', nama: 'Budi Santoso', tempatLahir: 'Banjarmasin', tanggalLahir: '2003-05-12', programStudi: 'Teknik Informatika', dosenPembimbing: 'Dr. Hendro Wijaya, M.Kom', email: 'budi@poliban.ac.id', nomorHp: '081234567890', tahunMasuk: '2021', jenisKelamin: 'Laki-laki', asal: 'Banjarmasin', agama: 'Islam', alamat: 'Jl. Merdeka No. 1'),
-    Mahasiswa(nim: 'C030654321', nama: 'Siti Aminah', tempatLahir: 'Martapura', tanggalLahir: '2002-08-20', programStudi: 'Sistem Informasi', dosenPembimbing: 'Prof. Dr. Anisa Rahmawati, M.Sc', email: 'siti.a@poliban.ac.id', nomorHp: '089876543210', tahunMasuk: '2020', jenisKelamin: 'Perempuan', asal: 'Martapura', agama: 'Islam', alamat: 'Jl. Pahlawan No. 15'),
-    Mahasiswa(nim: 'C030320003', nama: 'Ahmad Subarjo', tempatLahir: 'Pelaihari', tanggalLahir: '2001-01-15', programStudi: 'Manajemen Informatika', dosenPembimbing: 'Dr. Rina Amelia, M.T.', email: 'ahmad.s@poliban.ac.id', nomorHp: '081122334455', tahunMasuk: '2020', jenisKelamin: 'Laki-laki', asal: 'Pelaihari', agama: 'Islam', alamat: 'Jl. Angsana No. 10'),
-  ];
-
   @override
   State<KelolaMahasiswaPage> createState() => _KelolaMahasiswaPageState();
 }
 
 class _KelolaMahasiswaPageState extends State<KelolaMahasiswaPage> {
-  // ... _filteredMahasiswa dan _searchController tetap sama ...
+  late Future<List<Mahasiswa>> _mahasiswaFuture;
+  List<Mahasiswa> _allMahasiswa = [];
   List<Mahasiswa> _filteredMahasiswa = [];
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    KelolaMahasiswaPage.daftarMahasiswa.sort((a, b) => a.nama.compareTo(b.nama));
-    _filteredMahasiswa = List.from(KelolaMahasiswaPage.daftarMahasiswa);
+    _mahasiswaFuture = _fetchMahasiswa();
     _searchController.addListener(_filterMahasiswa);
   }
 
+  Future<List<Mahasiswa>> _fetchMahasiswa() async {
+    // Ganti dengan URL API Anda yang sebenarnya
+    final url = Uri.parse('https://ti054c03.agussbn.my.id/api/mahasiswa'); 
+    try {
+      final response = await http.get(url).timeout(const Duration(seconds: 15));
+      debugPrint('Status Code: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        final List<dynamic>? dataList = responseData['data'];
+
+        if (dataList != null && dataList is List) {
+          _allMahasiswa = dataList.map((json) => Mahasiswa.fromJson(json)).toList();
+          _allMahasiswa.sort((a, b) => a.nama.compareTo(b.nama));
+          _filteredMahasiswa = List.from(_allMahasiswa);
+          return _filteredMahasiswa;
+        } else {
+          throw Exception('Format data API tidak sesuai (key "data" tidak ditemukan/bukan list).');
+        }
+      } else {
+        throw Exception('Gagal memuat data (Status: ${response.statusCode})');
+      }
+    } catch (e) {
+      throw Exception('Gagal terhubung ke server: $e');
+    }
+  }
+
+  void _refreshData() {
+    setState(() {
+      _mahasiswaFuture = _fetchMahasiswa();
+    });
+  }
+
   void _filterMahasiswa() {
-    // ... fungsi filter tetap sama ...
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredMahasiswa = KelolaMahasiswaPage.daftarMahasiswa.where((mhs) => mhs.nim.toLowerCase().contains(query) || mhs.nama.toLowerCase().contains(query) || mhs.programStudi.toLowerCase().contains(query)).toList();
+      _filteredMahasiswa = _allMahasiswa.where((mhs) {
+        // PERUBAHAN DI SINI: Sesuaikan dengan nama properti yang baru
+        final namaProdi = mhs.namaProdi ?? '';
+        return mhs.nim.toLowerCase().contains(query) ||
+               mhs.nama.toLowerCase().contains(query) ||
+               namaProdi.toLowerCase().contains(query);
+      }).toList();
     });
   }
 
   void _navigateToTambahMahasiswa() async {
-    // ... fungsi ini tetap sama ...
     final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const TambahMahasiswaPage()));
-    if (result == true && mounted) {
-      setState(() {
-        KelolaMahasiswaPage.daftarMahasiswa.sort((a, b) => a.nama.compareTo(b.nama));
-        _filterMahasiswa();
-      });
-    }
+    if (result == true) _refreshData();
   }
 
-  // --- FUNGSI INI SEKARANG DIPERBAIKI ---
   void _navigateToEditMahasiswa(Mahasiswa mahasiswa) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        // Mengirim data mahasiswa ke halaman Tambah/Edit
-        builder: (context) => TambahMahasiswaPage(mahasiswaToEdit: mahasiswa),
-      ),
-    );
-    // Jika ada perubahan (pop mengembalikan true), refresh daftar
-    if (result == true && mounted) {
-      setState(() {
-        _filterMahasiswa();
-      });
-    }
+    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => TambahMahasiswaPage(mahasiswaToEdit: mahasiswa)));
+    if (result == true) _refreshData();
   }
 
   void _navigateToDetailMahasiswa(Mahasiswa mahasiswa) {
-     // ... fungsi ini tetap sama ...
      Navigator.push(context, MaterialPageRoute(builder: (context) => DetailMahasiswaPage(mahasiswa: mahasiswa)));
   }
 
-  void _deleteMahasiswa(Mahasiswa mahasiswa) {
-    // ... fungsi ini tetap sama ...
-     showDialog(context: context, builder: (BuildContext context) { return AlertDialog(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)), title: const Text('Hapus Mahasiswa'), content: Text('Apakah Anda yakin ingin menghapus data ${mahasiswa.nama} (${mahasiswa.nim})?'), actions: <Widget>[TextButton(child: const Text('Batal'), onPressed: () => Navigator.of(context).pop()), TextButton(style: TextButton.styleFrom(foregroundColor: Colors.red.shade700), child: const Text('Hapus'), onPressed: () { if (mounted) { setState(() { KelolaMahasiswaPage.daftarMahasiswa.remove(mahasiswa); _filterMahasiswa(); }); } Navigator.of(context).pop(); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Data ${mahasiswa.nama} berhasil dihapus.'))); })]); });
+  Future<void> _deleteMahasiswa(String nim) async {
+    // Ganti dengan URL API Hapus Anda
+    final url = Uri.parse('https://ti054c03.agussbn.my.id/api/hapus-mahasiswa/$nim'); 
+    try {
+      // Pastikan methodnya benar (DELETE, PUT, atau POST)
+      final response = await http.delete(url); 
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data berhasil dihapus'), backgroundColor: Colors.green));
+        _refreshData();
+      } else {
+        final errorData = json.decode(response.body);
+        _showErrorDialog('Gagal menghapus data. Server: ${errorData['message'] ?? response.body}');
+      }
+    } catch (e) {
+       _showErrorDialog('Terjadi kesalahan koneksi saat menghapus data. Error: $e');
+    }
+  }
+
+  void _confirmDelete(Mahasiswa mahasiswa) {
+    showDialog(context: context, builder: (BuildContext context) { return AlertDialog(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)), title: const Text('Konfirmasi Hapus'), content: Text('Apakah Anda yakin ingin menghapus data ${mahasiswa.nama}?'), actions: <Widget>[TextButton(child: const Text('Batal'), onPressed: () => Navigator.of(context).pop()), TextButton(style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text('Hapus'), onPressed: () {Navigator.of(context).pop(); _deleteMahasiswa(mahasiswa.nim);})]);});
+  }
+  
+  void _showErrorDialog(String message) {
+    showDialog(context: context, builder: (context) => AlertDialog(title: const Text('Error'), content: Text(message), actions: [TextButton(child: const Text('OK'), onPressed: () => Navigator.of(context).pop())]));
   }
 
   @override
@@ -86,40 +120,46 @@ class _KelolaMahasiswaPageState extends State<KelolaMahasiswaPage> {
 
   @override
   Widget build(BuildContext context) {
-    // ... UI build tetap sama seperti sebelumnya, tidak perlu diubah ...
-     return Scaffold(
+    return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(title: const Text('Kelola Data Mahasiswa', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), backgroundColor: const Color(0xFF0D47A1), iconTheme: const IconThemeData(color: Colors.white)),
+      appBar: AppBar(title: const Text('Kelola Mahasiswa', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), backgroundColor: const Color(0xFF0D47A1), foregroundColor: Colors.white),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
-            child: Card(elevation: 2, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.0)), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8.0), child: TextField(controller: _searchController, decoration: InputDecoration(hintText: 'Cari NIM, Nama, Program Studi...', prefixIcon: Icon(Icons.search, color: Colors.grey[600]), border: InputBorder.none, suffixIcon: _searchController.text.isNotEmpty ? IconButton(icon: Icon(Icons.clear, color: Colors.grey[600]), onPressed: () => _searchController.clear()) : null)))),
+            child: TextField(controller: _searchController, decoration: InputDecoration(hintText: 'Cari NIM, Nama, Program Studi...', prefixIcon: const Icon(Icons.search), border: OutlineInputBorder(borderRadius: BorderRadius.circular(25.0), borderSide: BorderSide.none), filled: true, fillColor: Colors.white)),
           ),
           Expanded(
-            child: _filteredMahasiswa.isEmpty
-                ? Center(child: Text(_searchController.text.isEmpty ? 'Belum ada data mahasiswa.' : 'Data tidak ditemukan untuk "${_searchController.text}".', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey[700])))
-                : ListView.builder(
+            child: FutureBuilder<List<Mahasiswa>>(
+              future: _mahasiswaFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Gagal memuat data: ${snapshot.error}'));
+                }
+                if (_filteredMahasiswa.isEmpty) {
+                  return Center(child: Text(_searchController.text.isEmpty ? 'Data mahasiswa kosong.' : 'Data tidak ditemukan.'));
+                }
+                return RefreshIndicator(
+                  onRefresh: () async => _refreshData(),
+                  child: ListView.builder(
                     padding: const EdgeInsets.fromLTRB(12.0, 8.0, 12.0, 80.0),
                     itemCount: _filteredMahasiswa.length,
-                    itemBuilder: (context, index) {
-                      final mahasiswa = _filteredMahasiswa[index];
-                      return _buildMahasiswaCard(mahasiswa);
-                    },
+                    itemBuilder: (context, index) => _buildMahasiswaCard(_filteredMahasiswa[index]),
                   ),
+                );
+              },
+            ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(onPressed: _navigateToTambahMahasiswa, tooltip: 'Tambah Mahasiswa Baru', icon: const Icon(Icons.add, color: Colors.white), label: const Text('Tambah', style: TextStyle(color: Colors.white)), backgroundColor: const Color(0xFF1976D2)),
+      floatingActionButton: FloatingActionButton.extended(onPressed: _navigateToTambahMahasiswa, label: const Text('Tambah'), icon: const Icon(Icons.add)),
     );
   }
 
-  Widget _buildMahasiswaCard(Mahasiswa mhs) {
-    // ... UI Card tetap sama seperti sebelumnya ...
-     String initials = ""; List<String> nameParts = mhs.nama.split(" "); if (nameParts.isNotEmpty) { initials += nameParts[0][0]; if (nameParts.length > 1 && nameParts[nameParts.length-1].isNotEmpty) { initials += nameParts[nameParts.length - 1][0]; } } initials = initials.toUpperCase(); if(initials.length == 1 && mhs.nama.length > 1) { initials = mhs.nama.substring(0, 2).toUpperCase(); }
-     return Card(margin: const EdgeInsets.symmetric(vertical: 8.0), elevation: 2.5, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)), child: Padding(padding: const EdgeInsets.all(12.0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(crossAxisAlignment: CrossAxisAlignment.center, children: [CircleAvatar(radius: 24, backgroundColor: Theme.of(context).primaryColor.withOpacity(0.15), child: Text(initials, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColorDark, fontSize: 18))), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(mhs.nama, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1)), maxLines: 2, overflow: TextOverflow.ellipsis), const SizedBox(height: 2), Text(mhs.nim, style: TextStyle(fontSize: 14, color: Colors.grey[700]))]))]), const SizedBox(height: 10), Divider(color: Colors.grey[300]), const SizedBox(height: 6), _buildInfoRow(Icons.school_outlined, 'Prodi', mhs.programStudi), const SizedBox(height: 4), _buildInfoRow(Icons.calendar_today_outlined, 'Tahun Masuk', mhs.tahunMasuk), const SizedBox(height: 12), Row(mainAxisAlignment: MainAxisAlignment.end, children: [_actionButton(icon: Icons.visibility_outlined, label: 'Lihat', color: Colors.blue.shade700, onPressed: () => _navigateToDetailMahasiswa(mhs)), const SizedBox(width: 8), _actionButton(icon: Icons.edit_outlined, label: 'Edit', color: Colors.orange.shade700, onPressed: () => _navigateToEditMahasiswa(mhs)), const SizedBox(width: 8), _actionButton(icon: Icons.delete_outline, label: 'Hapus', color: Colors.red.shade700, onPressed: () => _deleteMahasiswa(mhs))])])));
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) { /* ... Sama seperti sebelumnya ... */ return Row(children: [Icon(icon, size: 16, color: Colors.grey[600]), const SizedBox(width: 8), Text('$label: ', style: TextStyle(fontSize: 14, color: Colors.grey[700], fontWeight: FontWeight.w500)), Expanded(child: Text(value, style: TextStyle(fontSize: 14, color: Colors.grey[800]), overflow: TextOverflow.ellipsis))]); }
-  Widget _actionButton({ required IconData icon, required String label, required Color color, required VoidCallback onPressed }) { /* ... Sama seperti sebelumnya ... */ return TextButton.icon(icon: Icon(icon, size: 18, color: color), label: Text(label, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600)), onPressed: onPressed, style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), tapTargetSize: MaterialTapTargetSize.shrinkWrap)); }
+  Widget _buildMahasiswaCard(Mahasiswa mhs) { String initials = ""; if (mhs.nama.isNotEmpty) { List<String> nameParts = mhs.nama.split(" ").where((p) => p.isNotEmpty).toList(); if (nameParts.isNotEmpty) { initials += nameParts[0][0]; if (nameParts.length > 1) { initials += nameParts[nameParts.length - 1][0]; } } } initials = initials.toUpperCase(); return Card(margin: const EdgeInsets.symmetric(vertical: 8.0), elevation: 2.5, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)), child: Padding(padding: const EdgeInsets.all(12.0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(crossAxisAlignment: CrossAxisAlignment.center, children: [CircleAvatar(radius: 24, backgroundColor: Theme.of(context).primaryColor.withOpacity(0.15), backgroundImage: (mhs.image != null && mhs.image!.isNotEmpty) ? NetworkImage(mhs.image!) : null, child: (mhs.image == null || mhs.image!.isEmpty) ? Text(initials, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColorDark, fontSize: 18)) : null), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(mhs.nama, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1)), maxLines: 2, overflow: TextOverflow.ellipsis), const SizedBox(height: 2), Text(mhs.nim, style: TextStyle(fontSize: 14, color: Colors.grey[700]))]))]), const SizedBox(height: 10), Divider(color: Colors.grey[300]), const SizedBox(height: 6), _buildInfoRow(Icons.school_outlined, 'Prodi', mhs.namaProdi ?? 'N/A'), const SizedBox(height: 4), _buildInfoRow(Icons.calendar_today_outlined, 'Tahun Masuk', mhs.tahunMasuk ?? 'N/A'), const SizedBox(height: 12), Row(mainAxisAlignment: MainAxisAlignment.end, children: [_actionButton(icon: Icons.visibility_outlined, label: 'Lihat', color: Colors.blue.shade700, onPressed: () => _navigateToDetailMahasiswa(mhs)), const SizedBox(width: 8), _actionButton(icon: Icons.edit_outlined, label: 'Edit', color: Colors.orange.shade700, onPressed: () => _navigateToEditMahasiswa(mhs)), const SizedBox(width: 8), _actionButton(icon: Icons.delete_outline, label: 'Hapus', color: Colors.red.shade700, onPressed: () => _confirmDelete(mhs))])]))); }
+  Widget _buildInfoRow(IconData icon, String label, String value) => Row(children: [Icon(icon, size: 16, color: Colors.grey[600]), const SizedBox(width: 8), Text('$label: ', style: TextStyle(fontSize: 14, color: Colors.grey[700], fontWeight: FontWeight.w500)), Expanded(child: Text(value, style: TextStyle(fontSize: 14, color: Colors.grey[800]), overflow: TextOverflow.ellipsis))]);
+  Widget _actionButton({required IconData icon, required String label, required Color color, required VoidCallback onPressed}) => TextButton.icon(icon: Icon(icon, size: 18, color: color), label: Text(label, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600)), onPressed: onPressed, style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), tapTargetSize: MaterialTapTargetSize.shrinkWrap));
 }

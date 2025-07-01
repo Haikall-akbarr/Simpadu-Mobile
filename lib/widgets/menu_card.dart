@@ -1,3 +1,4 @@
+// lib/widgets/menu_card.dart
 import 'package:flutter/material.dart';
 
 class MenuCard extends StatelessWidget {
@@ -15,16 +16,34 @@ class MenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.blue[50],
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      elevation: 2,
+      shadowColor: Colors.grey.withOpacity(0.1),
+      color: Colors.white, // Latar belakang kartu putih
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, size: 40, color: Colors.blue),
-            const SizedBox(height: 10),
-            Text(label, style: const TextStyle(fontSize: 16)),
+            Icon(
+              icon,
+              size: 36, // Ukuran ikon disesuaikan
+              color: const Color(0xFF0D47A1), // Warna ikon biru tua
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14, // Ukuran font disesuaikan
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[800],
+              ),
+            ),
           ],
         ),
       ),

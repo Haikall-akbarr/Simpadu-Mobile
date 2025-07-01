@@ -1,25 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+// HAPUS CLASS PENGUMUMAN SERVICE YANG LAMA DARI FILE INI
 
-class PengumumanService {
-  static Future<String> fetchLatestPengumuman() async {
-    final response = await http.get(
-      Uri.parse('https://jsonplaceholder.typicode.com/posts'),
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data is List && data.isNotEmpty) {
-        return data[0]['title'] ?? 'Tidak ada pengumuman';
-      } else {
-        return 'Belum ada pengumuman';
-      }
-    } else {
-      return 'Gagal memuat pengumuman';
-    }
-  }
-}
+// 1. TAMBAHKAN IMPORT INI
+import '../services/pengumuman_service.dart';
 
 class PengumumanPage extends StatefulWidget {
   const PengumumanPage({super.key});
@@ -38,6 +21,7 @@ class _PengumumanPageState extends State<PengumumanPage> {
   }
 
   Future<void> _loadPengumuman() async {
+    // 2. Sekarang ini akan memanggil service yang benar secara otomatis
     final pengumuman = await PengumumanService.fetchLatestPengumuman();
     setState(() {
       _pengumuman = pengumuman;
@@ -48,7 +32,10 @@ class _PengumumanPageState extends State<PengumumanPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Pengumuman')),
-      body: Center(child: Text(_pengumuman)),
+      body: Padding( // Tambahkan sedikit padding agar lebih rapi
+        padding: const EdgeInsets.all(16.0),
+        child: Center(child: Text(_pengumuman, textAlign: TextAlign.center)),
+      ),
     );
   }
 }

@@ -15,8 +15,6 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_spinkit: ^5.2.0
-  mobile_scanner: ^3.5.1
-  camera: ^0.10.5+5
   permission_handler: ^11.0.1
   http: ^1.2.1
   path_provider: ^2.1.2
@@ -34,7 +32,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo.jpg"  # Sesuaikan path gambar Anda
+  image_path: "assets/images/Poliban_logo1.png"  # Sesuaikan path gambar Anda
 
 flutter:
   uses-material-design: true

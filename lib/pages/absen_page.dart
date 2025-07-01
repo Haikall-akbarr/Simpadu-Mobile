@@ -1,8 +1,10 @@
 // lib/pages/absen_page.dart
+
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'dart:async';
+
+// Pastikan Anda mengimpor service API yang sudah kita buat sebelumnya
+import '../services/presensi_api_service.dart'; 
 
 class AbsenPage extends StatefulWidget {
   const AbsenPage({super.key});
@@ -12,49 +14,103 @@ class AbsenPage extends StatefulWidget {
 }
 
 class _AbsenPageState extends State<AbsenPage> {
-  List<dynamic> jadwalUntukAbsenList = [];
-  bool isLoading = true;
-  String errorMessage = '';
+  // State untuk mengelola timer dan status pertemuan
+  Timer? _timer;
+  StatusPertemuan? _pertemuanAktif;
+  
+  // State untuk UI
+  bool _isLoading = true;
+  String _statusMessage = 'Mencari kelas yang aktif...';
+  bool _sudahAbsen = false; // Flag untuk menandakan jika user sudah berhasil absen
+
+  // --- DATA PENTING ---
+  // Kode mata kuliah ini harusnya didapat secara dinamis, misal dari jadwal.
+  // Untuk sekarang kita hardcode.
+  final String _kodeMataKuliah = 'PTI101'; 
+  
+  // Token JWT mahasiswa, didapat setelah login.
+  // TOKEN SUDAH DIPERBARUI SESUAI PERMINTAAN ANDA.
+  final String _tokenMahasiswa = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNSMDAxIiwiZW1haWwiOiJhZG1pbkB1bml2ZXJzaXR5LmFjLmlkIiwicm9sZSI6ImFkbWluX2FrYWRlbWlrIiwia29kZV9wcm9kaSI6IiIsIm5hbWEiOiJBZG1pbiBBa2FkZW1payIsIm5pcCI6IiIsIm5pbSI6IiIsImV4cCI6MTc1MTMzMzMzMSwibmJmIjoxNzUxMzI5NzMxLCJpYXQiOjE3NTEzMjk3MzF9.7UL6h3sskbAn0cowR-zQh4gl7JWBvykgU3_V6LuvmJw';
 
   @override
   void initState() {
     super.initState();
-    fetchJadwalUntukAbsen();
+    // Mulai memeriksa status pertemuan setiap 15 detik
+    _startPeriodicCheck();
   }
 
-  Future<void> fetchJadwalUntukAbsen() async {
-    final url = Uri.parse('https://dummyjson.com/products?limit=5&select=title');
-    
-    if (!mounted) return;
-    setState(() {
-      isLoading = true;
-      errorMessage = '';
+  @override
+  void dispose() {
+    // Selalu batalkan timer saat halaman ditutup untuk menghindari memory leak
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startPeriodicCheck() {
+    _isLoading = true; // Tampilkan loading indicator saat pertama kali masuk
+    // Timer akan memanggil fungsi _cekStatus secara periodik
+    _timer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      if (!_sudahAbsen) { // Hanya cek jika belum absen
+         _cekStatus();
+      }
     });
+    // Panggil sekali di awal tanpa menunggu timer
+    _cekStatus();
+  }
+
+  Future<void> _cekStatus() async {
+    if (!mounted) return;
 
     try {
-      final response = await http.get(url).timeout(const Duration(seconds: 10));
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['products'] != null && data['products'] is List) {
-          setState(() {
-            jadwalUntukAbsenList = data['products'];
-            isLoading = false;
-          });
-        } else {
-          throw Exception('Format data jadwal tidak sesuai.');
-        }
-      } else {
-        throw Exception('Gagal memuat jadwal. Status: ${response.statusCode}');
+      final status = await PresensiApiService.cekStatusPertemuan(_kodeMataKuliah);
+      if (mounted) {
+        setState(() {
+          if (status.status == 'dibuka') {
+            _pertemuanAktif = status;
+            _statusMessage = 'Kelas ditemukan!';
+          } else {
+            _pertemuanAktif = null; // Tidak ada kelas yang aktif
+            _statusMessage = 'Saat ini tidak ada sesi kelas yang dibuka.\nMenunggu dosen memulai sesi...';
+          }
+          _isLoading = false;
+        });
       }
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        isLoading = false;
-        errorMessage = 'Terjadi kesalahan: $e';
-      });
-      debugPrint('Error fetching jadwal untuk absen: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _pertemuanAktif = null;
+          _statusMessage = 'Gagal terhubung ke server. Memeriksa kembali...';
+        });
+      }
+    }
+  }
+
+  Future<void> _handleAbsen() async {
+    if (_pertemuanAktif == null) return;
+    if (_sudahAbsen) {
+      _showInfoPopup('Anda sudah melakukan absensi untuk sesi ini.');
+      return;
+    }
+
+    setState(() => _isLoading = true); // Tampilkan loading saat proses absen
+
+    final berhasil = await PresensiApiService.kirimAbsensi(
+      kodePertemuan: _pertemuanAktif!.kodePertemuan,
+      token: _tokenMahasiswa,
+    );
+    
+    if (mounted) {
+      if (berhasil) {
+        setState(() {
+          _sudahAbsen = true;
+          _isLoading = false;
+        });
+        _showAbsenSuccessPopup();
+      } else {
+        setState(() => _isLoading = false);
+        _showInfoPopup('Gagal melakukan absensi. Pastikan Token JWT valid dan coba lagi.');
+      }
     }
   }
 
@@ -68,247 +124,190 @@ class _AbsenPageState extends State<AbsenPage> {
         foregroundColor: Colors.white,
         centerTitle: true,
       ),
-      body: isLoading
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : errorMessage.isNotEmpty
-              ? _buildErrorWidget()
-              : jadwalUntukAbsenList.isEmpty
-                  ? _buildEmptyWidget()
-                  : RefreshIndicator(
-                      onRefresh: fetchJadwalUntukAbsen,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(8.0),
-                        itemCount: jadwalUntukAbsenList.length,
-                        itemBuilder: (context, index) {
-                          final item = jadwalUntukAbsenList[index];
-                          final bool isActive = (index == 0);
-                          return _buildAbsenCard(item, isActive);
-                        },
-                      ),
-                    ),
-    );
-  }
-
-  Widget _buildErrorWidget() {
-    return Center( /* ... Kode sama seperti sebelumnya ... */ );
-  }
-
-  Widget _buildEmptyWidget() {
-    return Center( /* ... Kode sama seperti sebelumnya ... */ );
-  }
-
-  Widget _buildAbsenCard(dynamic item, bool isActive) {
-     // ... Kode sama seperti sebelumnya ...
-     // Saya akan salin ulang agar lengkap
-    final String namaMatkul = item['title'] ?? 'Nama Mata Kuliah Tidak Tersedia';
-    final String waktu = item['time'] ?? '10:30 - 12:10';
-    final String ruang = item['room'] ?? 'H - 205';
-    final String dosen = item['lecturer'] ?? 'Dosen Pengampu';
-
-    final Color titleColor = isActive ? Colors.blue.shade800 : Colors.grey.shade600;
-    final Color infoColor = isActive ? Colors.black87 : Colors.grey.shade500;
-    final double cardElevation = isActive ? 4.0 : 1.0;
-
-    return Opacity(
-      opacity: isActive ? 1.0 : 0.6,
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: cardElevation,
-        shadowColor: isActive ? Colors.blue.shade100 : Colors.grey.shade200,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (isActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    '● Sedang Berlangsung',
-                    style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
-              if (isActive) const SizedBox(height: 12),
-              Text(
-                namaMatkul,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: titleColor),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Icon(Icons.access_time_outlined, size: 18, color: infoColor),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      '$waktu | $ruang',
-                      style: TextStyle(fontSize: 14, color: infoColor),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(Icons.person_outline, size: 18, color: infoColor),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Dosen: $dosen',
-                      style: TextStyle(fontSize: 14, color: infoColor),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (isActive)
-                Text(
-                  'Pilih Status Kehadiran:',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.grey[800]),
-                ),
-              if (isActive) const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStatusButton('Hadir', Colors.green, item, isActive),
-                  const SizedBox(width: 8),
-                  _buildStatusButton('Izin', Colors.orange, item, isActive),
-                  const SizedBox(width: 8),
-                  _buildStatusButton('Sakit', Colors.red, item, isActive),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // --- PERUBAHAN UTAMA DI SINI ---
-  Widget _buildStatusButton(String label, Color color, dynamic jadwalItem, bool isActive) {
-    return Expanded(
-      child: ElevatedButton(
-        onPressed: isActive
-            ? () {
-                // Ganti SnackBar dengan memanggil fungsi popup baru
-                _showAbsenSuccessPopup(
-                  context,
-                  label,
-                  color,
-                  jadwalItem['title'] ?? 'Mata Kuliah ini',
-                );
-              }
-            : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isActive ? color : Colors.grey.shade300,
-          foregroundColor: isActive ? Colors.white : Colors.grey.shade500,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        child: Text(label),
-      ),
-    );
-  }
-
-  // --- FUNGSI BARU UNTUK MENAMPILKAN POPUP ---
-  Future<void> _showAbsenSuccessPopup(BuildContext context, String label, Color color, String namaMatkul) async {
-    IconData iconData;
-    switch (label) {
-      case 'Hadir':
-        iconData = Icons.check_circle_outline_rounded;
-        break;
-      case 'Izin':
-        iconData = Icons.info_outline_rounded;
-        break;
-      case 'Sakit':
-        iconData = Icons.local_hospital_outlined;
-        break;
-      default:
-        iconData = Icons.check_circle_outline_rounded;
-    }
-
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false, // User harus menekan tombol untuk menutup
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.0),
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.rectangle,
-              borderRadius: BorderRadius.circular(20.0),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10.0,
-                  offset: const Offset(0.0, 10.0),
-                ),
-              ],
+          : RefreshIndicator(
+              onRefresh: _cekStatus,
+              child: _pertemuanAktif != null && !_sudahAbsen
+                  ? ListView( // Gunakan ListView agar bisa di-refresh
+                      padding: const EdgeInsets.all(16.0),
+                      children: [_buildAbsenCard(_pertemuanAktif!)],
+                    )
+                  : _buildStatusMessage(),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min, // Agar ukuran popup sesuai konten
-              children: <Widget>[
-                Icon(iconData, color: color, size: 70),
-                const SizedBox(height: 20),
-                const Text(
-                  'Absensi Berhasil!',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.4),
-                    children: <TextSpan>[
-                      const TextSpan(text: 'Status Anda sebagai '),
-                      TextSpan(
-                          text: label,
-                          style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-                      const TextSpan(text: ' untuk mata kuliah '),
-                      TextSpan(
-                          text: namaMatkul,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-                      const TextSpan(text: ' telah berhasil dicatat.'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0D47A1), // Warna biru tema
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+    );
+  }
+
+  Widget _buildStatusMessage() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _sudahAbsen ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                      size: 80,
+                      color: _sudahAbsen ? Colors.green : Colors.grey.shade400,
                     ),
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Menutup popup
-                    },
-                    child: const Text(
-                      'OK',
-                      style: TextStyle(fontSize: 16),
+                    const SizedBox(height: 20),
+                    Text(
+                      _sudahAbsen ? 'Absensi Berhasil Dicatat!' : _statusMessage,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 18, color: Colors.black54, height: 1.5),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAbsenCard(StatusPertemuan item) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4.0,
+      shadowColor: Colors.blue.shade100,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.green.shade100,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.circle, color: Colors.green, size: 12),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Sedang Berlangsung',
+                    style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Pertemuan ke-${item.pertemuanKe}', // Judul dari data API
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Icons.access_time_filled, size: 18, color: Colors.black87),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Sisa Waktu: ${(item.sisaWaktu / 60).floor()} menit', // Info dari data API
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Silakan lakukan absensi dengan menekan tombol di bawah:',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.black87),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.touch_app_rounded),
+                label: const Text('Lakukan Absensi (Hadir)'),
+                onPressed: _handleAbsen,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+             // Tombol Izin dan Sakit kita nonaktifkan karena API hanya mendukung "Hadir"
+            const Row(
+              children: [
+                Expanded(child: AbsenButtonDisabled(label: 'Izin')),
+                SizedBox(width: 8),
+                Expanded(child: AbsenButtonDisabled(label: 'Sakit')),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // Fungsi-fungsi untuk menampilkan popup
+  Future<void> _showAbsenSuccessPopup() async {
+     // Implementasi popup sukses Anda bisa ditaruh di sini
+     // Saya akan menggunakan dialog sederhana sebagai contoh
+    return showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Absensi Berhasil'),
+        content: const Text('Kehadiran Anda telah berhasil dicatat oleh sistem.'),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showInfoPopup(String message) async {
+    return showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Informasi'),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Widget helper untuk tombol yang dinonaktifkan
+class AbsenButtonDisabled extends StatelessWidget {
+  final String label;
+  const AbsenButtonDisabled({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: null, // null onPressed akan menonaktifkan tombol
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.grey.shade300,
+        foregroundColor: Colors.grey.shade500,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+      child: Text(label),
     );
   }
 }

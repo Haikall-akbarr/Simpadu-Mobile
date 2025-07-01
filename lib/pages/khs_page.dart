@@ -1,87 +1,9 @@
 // lib/pages/khs_page.dart
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'dart:async';
+import '../services/dummy_api.dart'; // Impor dari dummy_api.dart
 
-// --- MODEL DATA (Sama seperti sebelumnya) ---
-class KhsMataKuliah {
-  final String kode;
-  final String nama;
-  final int sks;
-  final String nilai;
-  KhsMataKuliah({
-    required this.kode,
-    required this.nama,
-    required this.sks,
-    required this.nilai,
-  });
-  factory KhsMataKuliah.fromJson(Map<String, dynamic> json) => KhsMataKuliah(
-    kode: json['kode_mk'],
-    nama: json['nama_mk'],
-    sks: json['sks'],
-    nilai: json['nilai_huruf'],
-  );
-}
-
-class KhsSemester {
-  final String id;
-  final String nama;
-  final double ipSemester;
-  final List<KhsMataKuliah> mataKuliah;
-  KhsSemester({
-    required this.id,
-    required this.nama,
-    required this.ipSemester,
-    required this.mataKuliah,
-  });
-  factory KhsSemester.fromJson(Map<String, dynamic> json) {
-    var listMk = json['matakuliah'] as List;
-    return KhsSemester(
-      id: json['id_semester'],
-      nama: json['nama_semester'],
-      ipSemester: (json['ip_semester'] as num).toDouble(),
-      mataKuliah: listMk.map((i) => KhsMataKuliah.fromJson(i)).toList(),
-    );
-  }
-}
-
-class KhsData {
-  final int totalSks;
-  final double ipk;
-  final String predikat;
-  final List<KhsSemester> riwayatSemester;
-  KhsData({
-    required this.totalSks,
-    required this.ipk,
-    required this.predikat,
-    required this.riwayatSemester,
-  });
-  factory KhsData.fromJson(Map<String, dynamic> json) {
-    var listSemester = json['riwayat_semester'] as List;
-    return KhsData(
-      totalSks: json['total_sks_lulus'],
-      ipk: (json['ipk'] as num).toDouble(),
-      predikat: json['predikat'],
-      riwayatSemester:
-          listSemester.map((i) => KhsSemester.fromJson(i)).toList(),
-    );
-  }
-}
-
-// --- SERVICE DATA ---
-Future<KhsData> fetchKhsData() async {
-  final response = await http.get(
-    Uri.parse(
-      'https://api.mockfly.dev/mocks/c2e2889f-2f63-4411-a031-62df43a9a114/khs',
-    ),
-  );
-  if (response.statusCode == 200) {
-    return KhsData.fromJson(json.decode(response.body));
-  } else {
-    throw Exception('Gagal memuat data KHS');
-  }
-}
+// --- MODEL DATA & SERVICE FUNCTION SUDAH ADA DI DUMMY_API.DART ---
+// --- TIDAK PERLU DEFINISI ULANG DI SINI ---
 
 // --- UI HALAMAN KHS ---
 class KhsPage extends StatefulWidget {
@@ -91,20 +13,32 @@ class KhsPage extends StatefulWidget {
 }
 
 class _KhsPageState extends State<KhsPage> {
-  final Future<KhsData> _futureKhsData = fetchKhsData();
-  String? _selectedSemesterId;
+  late Future<KhsData> _futureKhsData;
+  KhsSemester? _selectedSemester; // Gunakan objek utuh untuk state
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  void _loadData() {
+    setState(() {
+      _futureKhsData = fetchKhsData();
+      _selectedSemester = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text(
-          'Kartu Hasil Studi',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        leading: const BackButton(color: Color.fromARGB(221, 255, 255, 255)), // Tombol kembali yang terlihat
+        title: const Text('KHS', style: TextStyle(color: Color.fromARGB(221, 255, 255, 255), fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF0D47A1),
-        foregroundColor: Colors.white,
+        elevation: 0.5,
+        centerTitle: true,
       ),
       body: FutureBuilder<KhsData>(
         future: _futureKhsData,
@@ -113,73 +47,28 @@ class _KhsPageState extends State<KhsPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('Gagal memuat data: ${snapshot.error}'));
           }
-          if (!snapshot.hasData) {
+          if (!snapshot.hasData || snapshot.data!.riwayatSemester.isEmpty) {
             return const Center(child: Text('Data KHS tidak ditemukan.'));
           }
 
           final khsData = snapshot.data!;
-          _selectedSemesterId ??=
-              khsData.riwayatSemester.isNotEmpty
-                  ? khsData.riwayatSemester.first.id
-                  : null;
-
-          final selectedSemesterDetail =
-              _selectedSemesterId != null
-                  ? khsData.riwayatSemester.firstWhere(
-                    (s) => s.id == _selectedSemesterId,
-                  )
-                  : null;
+          // Set semester terpilih pertama kali jika belum ada
+          _selectedSemester ??= khsData.riwayatSemester.last;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Kartu Hasil Studi (KHS)',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Lihat hasil studi Anda per semester',
-                  style: TextStyle(fontSize: 15, color: Colors.grey),
-                ),
-                const SizedBox(height: 20),
+                const Text('Semester', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                const SizedBox(height: 8),
+                _buildSemesterDropdown(khsData.riwayatSemester),
+                const SizedBox(height: 24),
 
-                // --- Bagian Ringkasan (IPK, SKS, dll.) ---
-                _buildSummaryCard(
-                  Icons.summarize_outlined,
-                  'Total SKS Lulus',
-                  khsData.totalSks.toString(),
-                ),
-                const SizedBox(height: 12),
-                _buildSummaryCard(
-                  Icons.trending_up,
-                  'IPK',
-                  khsData.ipk.toStringAsFixed(2),
-                ),
-                const SizedBox(height: 12),
-                _buildSummaryCard(
-                  Icons.military_tech_outlined,
-                  'Predikat',
-                  khsData.predikat,
-                ),
-                const SizedBox(height: 20),
-                _buildDownloadButton('Unduh Transkrip', () {
-                  /* TODO */
-                }),
-
-                const Divider(height: 32),
-
-                // --- Bagian Detail per Semester ---
-                if (khsData.riwayatSemester.isNotEmpty &&
-                    selectedSemesterDetail != null) ...[
-                  _buildSemesterDropdown(khsData.riwayatSemester),
-                  const SizedBox(height: 20),
-                  _buildSemesterDetailCard(selectedSemesterDetail),
-                ],
+                if (_selectedSemester != null)
+                  _buildSemesterDetailCard(_selectedSemester!),
               ],
             ),
           );
@@ -188,207 +77,147 @@ class _KhsPageState extends State<KhsPage> {
     );
   }
 
-  // ==========================================================
-  // === FUNGSI YANG HILANG SEBELUMNYA DITAMBAHKAN DI SINI ===
-  // ==========================================================
-  Widget _buildSummaryCard(IconData icon, String label, String value) {
-    return Card(
-      elevation: 2,
-      shadowColor: Colors.grey.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.grey[700], size: 28),
-            const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(color: Colors.grey[700], fontSize: 14),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- Widget helper lainnya ---
+  // --- Widget-widget helper ---
 
   Widget _buildSemesterDropdown(List<KhsSemester> semesterOptions) {
-    return Row(
-      children: [
-        const Text(
-          'Pilih Semester:',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10.0),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<KhsSemester>(
+          value: _selectedSemester,
+          isExpanded: true,
+          hint: const Text("-- Pilih semester --"),
+          icon: const Icon(Icons.keyboard_arrow_down),
+          items: semesterOptions.map((semester) {
+            return DropdownMenuItem<KhsSemester>(
+              value: semester,
+              child: Text(semester.nama, style: const TextStyle(fontWeight: FontWeight.w500)),
+            );
+          }).toList(),
+          onChanged: (KhsSemester? newValue) {
+            setState(() {
+              _selectedSemester = newValue;
+            });
+          },
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedSemesterId,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            items:
-                semesterOptions.map((semester) {
-                  return DropdownMenuItem<String>(
-                    value: semester.id,
-                    child: Text(semester.nama, overflow: TextOverflow.ellipsis),
-                  );
-                }).toList(),
-            onChanged: (String? newValue) {
-              setState(() {
-                _selectedSemesterId = newValue;
-              });
-            },
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildSemesterDetailCard(KhsSemester semester) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    semester.nama,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      const TextSpan(
-                        text: 'IP Semester: ',
-                        style: TextStyle(fontSize: 15, color: Colors.grey),
-                      ),
-                      TextSpan(
-                        text: semester.ipSemester.toStringAsFixed(2),
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blueAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: Row(
-              children: [
-                _headerText('Kode', 2),
-                _headerText('Mata Kuliah', 5),
-                _headerText('SKS', 1),
-                _headerText('Nilai', 1),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          for (var mk in semester.mataKuliah) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 12.0,
-              ),
-              child: Row(
-                children: [
-                  _bodyText(mk.kode, 2),
-                  _bodyText(mk.nama, 5),
-                  _bodyText(mk.sks.toString(), 1),
-                  _bodyText(mk.nilai, 1, isBold: true),
-                ],
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                semester.nama,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
-            if (mk != semester.mataKuliah.last)
-              const Divider(height: 1, indent: 16, endIndent: 16),
+            const SizedBox(width: 16),
+            Text.rich(
+              TextSpan(children: [
+                const TextSpan(text: 'IP Semester: ', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                TextSpan(text: semester.ipSemester.toStringAsFixed(2), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+              ]),
+            ),
           ],
-          const SizedBox(height: 8),
-          _buildDownloadButton('Unduh KHS', () {
-            /* TODO */
-          }),
-          const SizedBox(height: 16),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            children: [
+              // ===============================================
+              // === PERBAIKAN UTAMA ADA DI DALAM WIDGET INI ===
+              // ===============================================
+              _buildCourseTable(semester.mataKuliah),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Center(child: Text("Hasil Studi ${semester.nama}", style: const TextStyle(color: Colors.grey))),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.download_outlined, size: 20),
+            label: const Text('Unduh PDF'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              foregroundColor: Colors.blue.shade700,
+              side: BorderSide(color: Colors.grey.shade300),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        )
+      ],
     );
   }
 
-  Widget _headerText(String text, int flex) => Expanded(
-    flex: flex,
-    child: Text(
-      text,
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        color: Colors.grey.shade600,
-        fontSize: 13,
-      ),
-    ),
-  );
-  Widget _bodyText(String text, int flex, {bool isBold = false}) => Expanded(
-    flex: flex,
-    child: Text(
-      text,
-      style: TextStyle(
-        fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-        fontSize: 13,
-      ),
-    ),
-  );
-  Widget _buildDownloadButton(String label, VoidCallback onPressed) => SizedBox(
-    width: double.infinity,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.download_outlined, size: 20),
-        label: Text(label),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          foregroundColor: Colors.blue.shade700,
-          side: BorderSide(color: Colors.blue.shade700),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  // Widget baru untuk membuat tabel agar lebih terstruktur
+  Widget _buildCourseTable(List<KhsMataKuliah> mataKuliah) {
+    return Table(
+      columnWidths: const {
+        0: FlexColumnWidth(2.0), // Kode
+        1: FlexColumnWidth(5.0), // Mata Kuliah
+        2: FlexColumnWidth(1.2), // SKS
+        3: FlexColumnWidth(1.2), // Nilai
+        4: FlexColumnWidth(1.2), // Bobot
+      },
+      children: [
+        // Table Header
+        TableRow(
+          decoration: BoxDecoration(color: Colors.grey[50]),
+          children: [
+            _headerCell('Kode'),
+            _headerCell('Mata Kuliah'),
+            _headerCell('SKS', align: TextAlign.center),
+            _headerCell('Nilai', align: TextAlign.center),
+            _headerCell('Bobot', align: TextAlign.center),
+          ],
         ),
-      ),
-    ),
-  );
+        // Table Rows
+        for (var mk in mataKuliah)
+          TableRow(
+            children: [
+              _bodyCell(mk.kode),
+              _bodyCell(mk.nama),
+              _bodyCell(mk.sks.toString(), align: TextAlign.center),
+              _bodyCell(mk.nilai, align: TextAlign.center, isBold: true),
+              _bodyCell(mk.bobot, align: TextAlign.center),
+            ],
+          ),
+      ],
+    );
+  }
+
+  // Widget helper untuk sel header tabel
+  Widget _headerCell(String text, {TextAlign align = TextAlign.start}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+      child: Text(text, textAlign: align, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade600, fontSize: 13)),
+    );
+  }
+
+  // Widget helper untuk sel body tabel
+  Widget _bodyCell(String text, {TextAlign align = TextAlign.start, bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 14.0),
+      child: Text(text, textAlign: align, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, fontSize: 13, color: Colors.black87)),
+    );
+  }
 }
