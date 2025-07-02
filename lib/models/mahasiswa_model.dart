@@ -1,11 +1,10 @@
 // lib/models/mahasiswa_model.dart
 
 class Mahasiswa {
-  // Properti utama sesuai dengan kolom tabel di database
   String nim;
   String nama;
   String? tempatLahir;
-  String? tanggalLahir; 
+  String? tanggalLahir;
   String? email;
   String? nomorHp;
   String? tahunMasuk;
@@ -20,8 +19,10 @@ class Mahasiswa {
   String? idKabupaten;
   String? idKelas;
 
-  // Properti tambahan untuk menampilkan data di UI (didapat dari JOIN di backend)
+  // Properti tambahan untuk menampilkan data dari JOIN di backend
   String? namaProdi;
+  String? jenjang;      // <-- Pastikan ada
+  String? namaJurusan;  // <-- Pastikan ada
   String? namaPegawai;
   String? namaJk;
   String? namaAgama;
@@ -44,6 +45,8 @@ class Mahasiswa {
     this.idKabupaten,
     this.idKelas,
     this.namaProdi,
+    this.jenjang,       // <-- Pastikan ada
+    this.namaJurusan,   // <-- Pastikan ada
     this.namaPegawai,
     this.namaJk,
     this.namaAgama,
@@ -51,9 +54,11 @@ class Mahasiswa {
   });
 
   factory Mahasiswa.fromJson(Map<String, dynamic> json) {
-    String? safeString(dynamic value) {
+    String? safeString(dynamic value) => value?.toString();
+    int? safeInt(dynamic value) {
       if (value == null) return null;
-      return value.toString();
+      if (value is int) return value;
+      return int.tryParse(value.toString());
     }
 
     return Mahasiswa(
@@ -66,13 +71,15 @@ class Mahasiswa {
       tahunMasuk: safeString(json['tahun_masuk']),
       alamatLengkap: json['alamat_lengkap'],
       image: json['image'],
-      idProdi: json['id_prodi'],
+      idProdi: safeInt(json['id_prodi']),
       idPegawai: safeString(json['id_pegawai']),
-      idJk: json['id_jk'],
-      idAgama: json['id_agama'],
+      idJk: safeInt(json['id_jk']),
+      idAgama: safeInt(json['id_agama']),
       idKabupaten: safeString(json['id_kabupaten']),
       idKelas: safeString(json['id_kelas']),
       namaProdi: json['nama_prodi'],
+      jenjang: json['jenjang'],
+      namaJurusan: json['nama_jurusan'],
       namaPegawai: json['nama_pegawai'],
       namaJk: json['nama_jk'],
       namaAgama: json['nama_agama'],
@@ -80,24 +87,12 @@ class Mahasiswa {
     );
   }
 
-  // --- PERBAIKAN UTAMA DI SINI ---
   Map<String, dynamic> toJson() {
-    String? formattedDate;
-    if (tanggalLahir != null && tanggalLahir!.isNotEmpty) {
-      try {
-        // Ambil hanya bagian tanggalnya saja (YYYY-MM-DD)
-        formattedDate = tanggalLahir!.split('T')[0];
-      } catch (e) {
-        formattedDate = tanggalLahir; // fallback jika format tidak terduga
-      }
-    }
-    
     return {
       'nim': nim,
       'nama': nama,
       'tempat_lahir': tempatLahir,
-      // Kirim tanggal yang sudah diformat
-      'tanggal_lahir': formattedDate, 
+      'tanggal_lahir': tanggalLahir?.split('T')[0],
       'id_prodi': idProdi,
       'id_pegawai': idPegawai,
       'email': email,

@@ -9,7 +9,7 @@ import '../models/matakuliah_api_model.dart'; // <<< Impor dari file model yang 
 // --- SERVICE API ---
 Future<List<ApiMataKuliah>> fetchMataKuliahFromApi() async {
   const String apiUrl = 'https://ti054c01.agussbn.my.id/matakuliah';
-  const String token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNSMDAxIiwiZW1haWwiOiJhZG1pbkB1bml2ZXJzaXR5LmFjLmlkIiwicm9sZSI6ImFkbWluX2FrYWRlbWlrIiwia29kZV9wcm9kaSI6IiIsIm5hbWEiOiJBZG1pbiBBa2FkZW1payIsIm5pcCI6IiIsIm5pbSI6IiIsImV4cCI6MTc1MTMzMzMzMSwibmJmIjoxNzUxMzI5NzMxLCJpYXQiOjE3NTEzMjk3MzF9.7UL6h3sskbAn0cowR-zQh4gl7JWBvykgU3_V6LuvmJw';
+  const String token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiVVNSMDAxIiwiZW1haWwiOiJhZG1pbkB1bml2ZXJzaXR5LmFjLmlkIiwicm9sZSI6ImFkbWluX2FrYWRlbWlrIiwia29kZV9wcm9kaSI6IiIsIm5hbWEiOiJBZG1pbiBBa2FkZW1payIsIm5pcCI6IiIsIm5pbSI6IiIsImV4cCI6MTc1MTM1ODc0MSwibmJmIjoxNzUxMzU1MTQxLCJpYXQiOjE3NTEzNTUxNDF9.P1q3_iHVNiXD_ubS9hTMdS4Yhrn8NhgcTcUv_e78A_s';
   try {
     final response = await http.get(Uri.parse(apiUrl), headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'}).timeout(const Duration(seconds: 15));
     if (response.statusCode == 200) {

@@ -1,7 +1,10 @@
+// lib/admin_prodi/admin_prodi_dashboard_page.dart
+
 import 'package:flutter/material.dart';
-import 'tambah_mahasiswa_page.dart';
+// --- PERUBAHAN DI SINI: Ganti import ke file baru ---
+import 'edit_mahasiswa_page.dart'; 
 import 'kelola_mahasiswa_page.dart';
-import 'admin_profil_page.dart'; // Impor halaman profil yang baru
+import 'admin_profil_page.dart';
 
 class AdminProdiDashboardPage extends StatefulWidget {
   const AdminProdiDashboardPage({super.key});
@@ -42,13 +45,11 @@ class _AdminProdiDashboardPageState extends State<AdminProdiDashboardPage> {
                 // TODO: Aksi notifikasi admin
               }),
           
-          // --- PERUBAHAN UTAMA DI SINI ---
-          // Tombol avatar sekarang bisa diklik
           Padding(
             padding: const EdgeInsets.only(right: 16.0, left: 8.0),
             child: GestureDetector(
               onTap: () {
-                _navigateToPage(const AdminProfilPage()); // Navigasi ke halaman profil
+                _navigateToPage(const AdminProfilPage());
               },
               child: const CircleAvatar(
                 backgroundColor: Colors.white,
@@ -100,7 +101,8 @@ class _AdminProdiDashboardPageState extends State<AdminProdiDashboardPage> {
                       icon: Icons.person_add_alt_1_outlined,
                       label: 'Tambah Mahasiswa',
                       color: Colors.blue.shade600,
-                      onTap: () => _navigateToPage(const TambahMahasiswaPage()),
+                      // --- PERUBAHAN DI SINI: Ganti ke EditMahasiswaPage ---
+                      onTap: () => _navigateToPage(const EditMahasiswaPage()),
                     ),
                   ),
                   const SizedBox(width: 12),

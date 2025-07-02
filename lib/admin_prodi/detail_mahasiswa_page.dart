@@ -1,4 +1,5 @@
 // lib/admin_prodi/detail_mahasiswa_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mahasiswa_model.dart';
@@ -8,20 +9,17 @@ class DetailMahasiswaPage extends StatelessWidget {
 
   const DetailMahasiswaPage({super.key, required this.mahasiswa});
 
-  // --- PERBAIKAN DI SINI ---
   String _formatTanggal(String? tanggal) {
     if (tanggal == null || tanggal.isEmpty) return 'N/A';
     try {
-      // Parse tanggal dari format timestamp dan format ulang
       final DateTime date = DateTime.parse(tanggal);
-      // Format ke dalam Bahasa Indonesia
       return DateFormat('d MMMM yyyy', 'id_ID').format(date);
     } catch (e) {
-      // Jika format dari API tidak standar, kembalikan apa adanya
       return tanggal;
     }
   }
 
+  // --- PERUBAHAN DI SINI: Isi fungsi yang tadinya kosong ---
   Widget _buildDetailItem(String label, String? value, {IconData? icon}) {
     final displayValue = (value == null || value.isEmpty) ? 'N/A' : value;
     
@@ -77,24 +75,20 @@ class DetailMahasiswaPage extends StatelessWidget {
         title: const Text('Detail Mahasiswa', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF0D47A1),
         iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 1,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Card(
-          elevation: 0,
+          elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12.0),
-            side: BorderSide(color: Colors.grey[300]!)
           ),
-          color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ... bagian CircleAvatar dan nama tidak berubah ...
-                 Center(
+                Center(
                   child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.blue.shade700,
@@ -125,32 +119,37 @@ class DetailMahasiswaPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Divider(color: Colors.grey[300]),
-                const SizedBox(height: 10),
-
+                const Divider(thickness: 1.2),
+                const Padding(
+                  padding: EdgeInsets.only(top: 10.0, bottom: 5),
+                  child: Text("Data Pribadi", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87)),
+                ),
                 _buildDetailItem('Nama Lengkap', mahasiswa.nama, icon: Icons.person_outline),
-                _buildDetailItem('NIM', mahasiswa.nim, icon: Icons.badge_outlined),
                 _buildDetailItem('Tempat Lahir', mahasiswa.tempatLahir, icon: Icons.location_city_outlined),
-                // --- PERBAIKAN TAMPILAN TANGGAL ---
                 _buildDetailItem('Tanggal Lahir', _formatTanggal(mahasiswa.tanggalLahir), icon: Icons.calendar_today_outlined),
-                // --- PERBAIKAN TAMPILAN N/A ---
                 _buildDetailItem('Jenis Kelamin', mahasiswa.namaJk, icon: Icons.wc_outlined),
                 _buildDetailItem('Agama', mahasiswa.namaAgama, icon: Icons.mosque_outlined),
                 
                 const SizedBox(height: 10),
-                Divider(color: Colors.grey[200]),
-                const SizedBox(height: 10),
+                const Divider(thickness: 1.2),
 
-                // --- PERBAIKAN TAMPILAN N/A ---
-                _buildDetailItem('Program Studi', mahasiswa.namaProdi, icon: Icons.school_outlined),
+                const Padding(
+                  padding: EdgeInsets.only(top: 10.0, bottom: 5),
+                  child: Text("Data Akademik", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87)),
+                ),
+                _buildDetailItem('Jurusan', mahasiswa.namaJurusan, icon: Icons.business_center_outlined),
+                _buildDetailItem('Program Studi', '${mahasiswa.jenjang ?? ''} - ${mahasiswa.namaProdi ?? 'N/A'}', icon: Icons.school_outlined),
                 _buildDetailItem('Kelas', mahasiswa.idKelas, icon: Icons.class_outlined),
                 _buildDetailItem('Tahun Masuk', mahasiswa.tahunMasuk, icon: Icons.calendar_view_day_rounded),
                 _buildDetailItem('Dosen Pembimbing', mahasiswa.namaPegawai, icon: Icons.supervisor_account_outlined),
 
                 const SizedBox(height: 10),
-                Divider(color: Colors.grey[200]),
-                const SizedBox(height: 10),
-
+                const Divider(thickness: 1.2),
+                
+                const Padding(
+                  padding: EdgeInsets.only(top: 10.0, bottom: 5),
+                  child: Text("Kontak & Alamat", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87)),
+                ),
                 _buildDetailItem('Email', mahasiswa.email, icon: Icons.email_outlined),
                 _buildDetailItem('Nomor HP', mahasiswa.nomorHp, icon: Icons.phone_outlined),
                 _buildDetailItem('Asal (Kabupaten)', mahasiswa.namaKabupaten, icon: Icons.map_outlined),
